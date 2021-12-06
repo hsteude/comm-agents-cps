@@ -51,8 +51,8 @@ class ThreeTankDataGenerator():
         ans_question_4 = const.TANK_MAX_FILL / kv23
         return ans_question_1, ans_question_2, ans_question_3, ans_question_4
 
-    def solve_ode(self, initial_state, q1, q2, kv12, kv23):
-        return odeint(self.system_dynamics_function, initial_state, self.t, (q2, q2, kv12, kv23))
+    def solve_ode(self, initial_state, q1, q3, kv12, kv23):
+        return odeint(self.system_dynamics_function, initial_state, self.t, (q1, q3, kv12, kv23))
 
     def generate(self):
         q1, q3, kv12, kv23 = self.get_random_samples_for_underl_factors(

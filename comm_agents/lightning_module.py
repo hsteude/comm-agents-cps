@@ -2,6 +2,8 @@ import torch
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from comm_agents.agents import RNNEncoder, Decoder, Filter
+from loguru import logger
+
 
 
 class LitModule(pl.LightningModule):
@@ -18,7 +20,7 @@ class LitModule(pl.LightningModule):
                  dec_out_dim=1,
                  beta: float = 0.001,
                  pretrain_thres: float = 0.001,
-                 learning_rate = 1e-3,
+                 learning_rate = 1e-4,
                  *args, ** kwargs):
         super(LitModule, self).__init__()
 
@@ -55,8 +57,12 @@ class LitModule(pl.LightningModule):
                              filt_num_decoders=filt_num_decoders)
 
     def forward(self, x):
-        out = self.encoder_agent(x)
-        return out
+        lat_space = self.encoder_agent(x)
+        lat_space_filt_ls = self.filter(lat_space, device=self.device)
+        dec_outs = [dec(ls) for dec, ls in zip(
+            self.decoding_agents, lat_space_filt_ls)]
+        dec_outs = torch.cat(dec_outs, axis=1)
+        return lat_space, dec_outs
 
     def loss_function(self, dec_outs, answers, selection_bias, beta):
         mse_loss = torch.nn.MSELoss()
@@ -102,6 +108,7 @@ class LitModule(pl.LightningModule):
 
         # phase switch
         if val_loss < self.pretrain_thres:
+            logger.info('setting beta to False')
             self.pretrain = False
         return val_loss
 
